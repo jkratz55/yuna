@@ -1,7 +1,10 @@
 package yuna
 
 import (
+	"fmt"
 	"net/http"
+
+	"github.com/jkratz55/yuna/log"
 )
 
 // A Handler handles an HTTP request and returns a Responder.
@@ -29,7 +32,9 @@ func wrap(h Handler) http.Handler {
 
 		err := responder.Respond(w, r)
 		if err != nil {
-			// todo: log error
+			logger := log.LoggerFromCtx(r.Context())
+			logger.Error(fmt.Sprintf("Responder %T encountered an error writing response to the client", responder),
+				log.Error(err))
 		}
 	})
 }

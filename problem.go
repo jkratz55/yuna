@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -143,9 +146,43 @@ func (p *ProblemDetails) Error() string {
 }
 
 func (p *ProblemDetails) Respond(w http.ResponseWriter, r *http.Request) error {
-	// todo: implement
-	w.WriteHeader(http.StatusTeapot)
+	p.ServeHTTP(w, r)
 	return nil
+}
+
+func (p *ProblemDetails) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	// Default to 500 Internal Server Error if no status code is set.
+	if p.StatusCode == 0 {
+		p.StatusCode = http.StatusInternalServerError
+	}
+
+	if strings.TrimSpace(p.Instance) == "" {
+		p.Instance = r.URL.Path
+	}
+	if strings.TrimSpace(p.Type) == "" {
+		p.Type = "about:blank"
+	}
+	if p.Extensions == nil {
+		p.Extensions = make(map[string]interface{})
+	}
+
+	if r.Header.Get("X-Request-ID") != "" {
+		p.Extensions["requestId"] = r.Header.Get("X-Request-ID")
+	}
+
+	if r.Header.Get("X-Correlation-ID") != "" {
+		p.Extensions["correlationId"] = r.Header.Get("X-Correlation-ID")
+	}
+
+	if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.TraceID().IsValid() {
+		p.Extensions["traceId"] = spanCtx.TraceID().String()
+		p.Extensions["sampled"] = spanCtx.IsSampled()
+	}
+
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(p.StatusCode)
+	_ = json.NewEncoder(w).Encode(p)
 }
 
 func BadRequest(violations Violations) *ProblemDetails {
@@ -166,6 +203,8 @@ func BadRequest(violations Violations) *ProblemDetails {
 		},
 	}
 }
+
+// todo: more helpers for standard errors
 
 func Unauthorized() *ProblemDetails {
 	return &ProblemDetails{

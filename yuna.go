@@ -56,6 +56,7 @@ func New(opts ...ServerOption) *Yuna {
 	z.opServer = z.initOpsServer(conf)
 
 	// Setup default middleware
+	z.router.Use(recovery())
 	z.router.Use(middleware.Trace(conf.traceProvider, z))
 	z.router.Use(middleware.InstrumentHandler(conf.meterProvider, conf.requestDurationBuckets))
 	z.router.Use(middleware.RequestLogger(conf.logger))

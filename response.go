@@ -45,6 +45,15 @@ func (rb *ResponseBuilder) Header(key string, values ...string) *ResponseBuilder
 	return rb
 }
 
+func (rb *ResponseBuilder) Headers(headers http.Header) *ResponseBuilder {
+	for key, values := range headers {
+		for _, value := range values {
+			rb.header.Add(key, value)
+		}
+	}
+	return rb
+}
+
 func (rb *ResponseBuilder) Cookie(cookie *http.Cookie) *ResponseBuilder {
 	rb.cookies = append(rb.cookies, cookie)
 	return rb
