@@ -41,6 +41,9 @@ type config struct {
 	// OpenTelemetry settings,
 	traceProvider trace.TracerProvider
 	meterProvider metric.MeterProvider
+
+	// Authentication settings
+	authenticator HttpAuthenticator
 }
 
 func newConfig(opts ...baseOption) *config {
@@ -62,6 +65,7 @@ func newConfig(opts ...baseOption) *config {
 		notFoundHandler:         wrapFn(notFound),
 		methodNotAllowedHandler: wrapFn(methodNotAllowed),
 		logger:                  log.GetLogger(),
+		authenticator:           nil,
 	}
 
 	for _, opt := range opts {
@@ -228,5 +232,11 @@ func WithHealthChecksBasePath(basePath string) ServerOption {
 func WithLogger(logger *log.Logger) ServerOption {
 	return serverOption(func(c *config) {
 		c.logger = logger
+	})
+}
+
+func WithAuthentication(authenticator HttpAuthenticator) ServerOption {
+	return serverOption(func(c *config) {
+		c.authenticator = authenticator
 	})
 }

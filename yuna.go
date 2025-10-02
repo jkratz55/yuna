@@ -61,6 +61,11 @@ func New(opts ...ServerOption) *Yuna {
 	z.router.Use(middleware.InstrumentHandler(conf.meterProvider, conf.requestDurationBuckets))
 	z.router.Use(middleware.RequestLogger(conf.logger))
 
+	// Setup global authentication middleware if it was enabled/configured
+	if conf.authenticator != nil {
+		z.router.Use(Authenticate(conf.authenticator))
+	}
+
 	// Setup default handlers for Chi if the route doesn't match or the method is not allowed
 	z.router.NotFound(conf.notFoundHandler.ServeHTTP)
 	z.router.MethodNotAllowed(conf.methodNotAllowedHandler.ServeHTTP)
