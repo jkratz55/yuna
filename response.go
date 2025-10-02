@@ -1,7 +1,9 @@
 package yuna
 
 import (
+	"bytes"
 	"encoding/json"
+	"html/template"
 	"net/http"
 )
 
@@ -22,6 +24,7 @@ type ResponseBuilder struct {
 	header  http.Header
 	cookies []*http.Cookie
 	body    any
+	html    bool
 }
 
 func Response() *ResponseBuilder {
@@ -59,12 +62,37 @@ func (rb *ResponseBuilder) Cookie(cookie *http.Cookie) *ResponseBuilder {
 	return rb
 }
 
+func (rb *ResponseBuilder) Cookies(cookies []*http.Cookie) *ResponseBuilder {
+	rb.cookies = append(rb.cookies, cookies...)
+	return rb
+}
+
 func (rb *ResponseBuilder) Body(body any) *ResponseBuilder {
 	rb.body = body
 	return rb
 }
 
+func (rb *ResponseBuilder) Html(tpl *template.Template, name string, data any) *ResponseBuilder {
+	var buf bytes.Buffer
+	var err error
+
+	if name == "" {
+		err = tpl.Execute(&buf, data)
+	} else {
+		err = tpl.ExecuteTemplate(&buf, name, data)
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	rb.body = buf.Bytes()
+	rb.html = true
+	return rb
+}
+
 func (rb *ResponseBuilder) Respond(w http.ResponseWriter, r *http.Request) error {
+
+	// todo: only supporting JSON and HTML for now, but we should handle content negotiation
 
 	if rb.status == 0 && rb.body != nil {
 		rb.status = http.StatusOK
@@ -84,23 +112,25 @@ func (rb *ResponseBuilder) Respond(w http.ResponseWriter, r *http.Request) error
 		http.SetCookie(w, cookie)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if rb.html {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	} else {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	}
+
 	w.WriteHeader(rb.status)
 
 	if rb.body == nil {
 		return nil
 	}
 
-	// todo: handle content-negotiation
 	return json.NewEncoder(w).Encode(rb.body)
 }
 
 func Ok(body any) *ResponseBuilder {
 	return &ResponseBuilder{
-		status: http.StatusOK,
-		header: http.Header{
-			"Content-Type": []string{"application/json"},
-		},
+		status:  http.StatusOK,
+		header:  http.Header{},
 		body:    body,
 		cookies: make([]*http.Cookie, 0),
 	}

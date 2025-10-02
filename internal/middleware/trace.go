@@ -64,7 +64,7 @@ func Trace(tp trace.TracerProvider, routes chi.Routes, opts ...otelhttp.Option) 
 			}
 
 			// A noop MeterProvider is intentionally used here so that it does not interfere with
-			// YUNA own middleware to capture metrics. The otelhttp implementation does not capture
+			// yuna's own middleware to capture metrics. The otelhttp implementation does not capture
 			// metrics at the path level, which makes it difficult to understand the performance of
 			// individual endpoints.
 			opts = append(opts,
