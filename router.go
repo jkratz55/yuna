@@ -12,16 +12,16 @@ type Router interface {
 	Use(middleware ...func(http.Handler) http.Handler)
 	With(middleware ...func(http.Handler) http.Handler) Router
 
-	Get(pattern string, fn HandlerFunc)
-	Post(pattern string, fn HandlerFunc)
-	Put(pattern string, fn HandlerFunc)
-	Delete(pattern string, fn HandlerFunc)
-	Patch(pattern string, fn HandlerFunc)
-	Options(pattern string, fn HandlerFunc)
-	Head(pattern string, fn HandlerFunc)
-	Connect(pattern string, fn HandlerFunc)
-	Trace(pattern string, fn HandlerFunc)
-	Method(method, pattern string, fn Handler)
+	Get(pattern string, fn HandlerFunc, middleware ...HttpMiddleware)
+	Post(pattern string, fn HandlerFunc, middleware ...HttpMiddleware)
+	Put(pattern string, fn HandlerFunc, middleware ...HttpMiddleware)
+	Delete(pattern string, fn HandlerFunc, middleware ...HttpMiddleware)
+	Patch(pattern string, fn HandlerFunc, middleware ...HttpMiddleware)
+	Options(pattern string, fn HandlerFunc, middleware ...HttpMiddleware)
+	Head(pattern string, fn HandlerFunc, middleware ...HttpMiddleware)
+	Connect(pattern string, fn HandlerFunc, middleware ...HttpMiddleware)
+	Trace(pattern string, fn HandlerFunc, middleware ...HttpMiddleware)
+	Method(method, pattern string, fn Handler, middleware ...HttpMiddleware)
 
 	Mount(pattern string, h http.Handler)
 	Route(pattern string, fn func(r Router))
@@ -51,44 +51,44 @@ func (m *Mux) With(middleware ...func(http.Handler) http.Handler) Router {
 	return &Mux{r: router}
 }
 
-func (m *Mux) Get(pattern string, fn HandlerFunc) {
-	m.r.Get(pattern, wrapFn(fn))
+func (m *Mux) Get(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	m.r.Get(pattern, wrapFn(fn, middleware...))
 }
 
-func (m *Mux) Post(pattern string, fn HandlerFunc) {
-	m.r.Post(pattern, wrapFn(fn))
+func (m *Mux) Post(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	m.r.Post(pattern, wrapFn(fn, middleware...))
 }
 
-func (m *Mux) Put(pattern string, fn HandlerFunc) {
-	m.r.Put(pattern, wrapFn(fn))
+func (m *Mux) Put(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	m.r.Put(pattern, wrapFn(fn, middleware...))
 }
 
-func (m *Mux) Delete(pattern string, fn HandlerFunc) {
-	m.r.Delete(pattern, wrapFn(fn))
+func (m *Mux) Delete(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	m.r.Delete(pattern, wrapFn(fn, middleware...))
 }
 
-func (m *Mux) Patch(pattern string, fn HandlerFunc) {
-	m.r.Patch(pattern, wrapFn(fn))
+func (m *Mux) Patch(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	m.r.Patch(pattern, wrapFn(fn, middleware...))
 }
 
-func (m *Mux) Options(pattern string, fn HandlerFunc) {
-	m.r.Options(pattern, wrapFn(fn))
+func (m *Mux) Options(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	m.r.Options(pattern, wrapFn(fn, middleware...))
 }
 
-func (m *Mux) Head(pattern string, fn HandlerFunc) {
-	m.r.Head(pattern, wrapFn(fn))
+func (m *Mux) Head(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	m.r.Head(pattern, wrapFn(fn, middleware...))
 }
 
-func (m *Mux) Connect(pattern string, fn HandlerFunc) {
-	m.r.Connect(pattern, wrapFn(fn))
+func (m *Mux) Connect(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	m.r.Connect(pattern, wrapFn(fn, middleware...))
 }
 
-func (m *Mux) Trace(pattern string, fn HandlerFunc) {
-	m.r.Trace(pattern, wrapFn(fn))
+func (m *Mux) Trace(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	m.r.Trace(pattern, wrapFn(fn, middleware...))
 }
 
-func (m *Mux) Method(method string, pattern string, handler Handler) {
-	m.r.Method(method, pattern, wrap(handler))
+func (m *Mux) Method(method string, pattern string, handler Handler, middleware ...HttpMiddleware) {
+	m.r.Method(method, pattern, wrap(handler, middleware...))
 }
 
 func (m *Mux) Mount(pattern string, h http.Handler) {

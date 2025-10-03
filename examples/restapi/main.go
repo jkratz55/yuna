@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -154,7 +155,42 @@ func main() {
 
 			return yuna.NoContent()
 		})
+
+		r.Get("/silly", sillyHandler, sillyMiddleware(), sillyMiddleware2())
+
+		oh := &OrderHandler{}
+		r.Get("/order", oh.getOrder, sillyMiddleware(), sillyMiddleware2())
 	})
 
 	app.Start()
+}
+
+func sillyHandler(r *yuna.Request) yuna.Responder {
+	return yuna.Ok(map[string]string{"message": "GET SILLY!"})
+}
+
+func sillyMiddleware() yuna.HttpMiddleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Println("silly middleware: start")
+			next.ServeHTTP(w, r)
+			fmt.Println("silly middleware: end")
+		})
+	}
+}
+
+func sillyMiddleware2() yuna.HttpMiddleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Println("silly middleware 2: start")
+			next.ServeHTTP(w, r)
+			fmt.Println("silly middleware 2: end")
+		})
+	}
+}
+
+type OrderHandler struct{}
+
+func (h *OrderHandler) getOrder(r *yuna.Request) yuna.Responder {
+	return yuna.Ok(map[string]string{"message": "GET ORDER!"})
 }

@@ -290,44 +290,44 @@ func (z *Yuna) With(middleware ...func(http.Handler) http.Handler) Router {
 	return &Mux{r: router}
 }
 
-func (z *Yuna) Get(pattern string, fn HandlerFunc) {
-	z.router.Get(pattern, wrapFn(fn))
+func (z *Yuna) Get(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	z.router.Get(pattern, wrapFn(fn, middleware...))
 }
 
-func (z *Yuna) Post(pattern string, fn HandlerFunc) {
-	z.router.Post(pattern, wrapFn(fn))
+func (z *Yuna) Post(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	z.router.Post(pattern, wrapFn(fn, middleware...))
 }
 
-func (z *Yuna) Put(pattern string, fn HandlerFunc) {
-	z.router.Put(pattern, wrapFn(fn))
+func (z *Yuna) Put(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	z.router.Put(pattern, wrapFn(fn, middleware...))
 }
 
-func (z *Yuna) Delete(pattern string, fn HandlerFunc) {
-	z.router.Delete(pattern, wrapFn(fn))
+func (z *Yuna) Delete(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	z.router.Delete(pattern, wrapFn(fn, middleware...))
 }
 
-func (z *Yuna) Patch(pattern string, fn HandlerFunc) {
-	z.router.Patch(pattern, wrapFn(fn))
+func (z *Yuna) Patch(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	z.router.Patch(pattern, wrapFn(fn, middleware...))
 }
 
-func (z *Yuna) Options(pattern string, fn HandlerFunc) {
-	z.router.Options(pattern, wrapFn(fn))
+func (z *Yuna) Options(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	z.router.Options(pattern, wrapFn(fn, middleware...))
 }
 
-func (z *Yuna) Head(pattern string, fn HandlerFunc) {
-	z.router.Head(pattern, wrapFn(fn))
+func (z *Yuna) Head(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	z.router.Head(pattern, wrapFn(fn, middleware...))
 }
 
-func (z *Yuna) Connect(pattern string, fn HandlerFunc) {
-	z.router.Connect(pattern, wrapFn(fn))
+func (z *Yuna) Connect(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	z.router.Connect(pattern, wrapFn(fn, middleware...))
 }
 
-func (z *Yuna) Trace(pattern string, fn HandlerFunc) {
-	z.router.Trace(pattern, wrapFn(fn))
+func (z *Yuna) Trace(pattern string, fn HandlerFunc, middleware ...HttpMiddleware) {
+	z.router.Trace(pattern, wrapFn(fn, middleware...))
 }
 
-func (z *Yuna) Method(method, pattern string, handler Handler) {
-	z.router.Method(method, pattern, wrap(handler))
+func (z *Yuna) Method(method, pattern string, handler Handler, middleware ...HttpMiddleware) {
+	z.router.Method(method, pattern, wrap(handler, middleware...))
 }
 
 func (z *Yuna) Mount(pattern string, h http.Handler) {

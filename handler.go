@@ -23,8 +23,10 @@ func (f HandlerFunc) ServeHTTP(r *Request) Responder {
 	return f(r)
 }
 
-func wrap(h Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+type HttpMiddleware func(next http.Handler) http.Handler
+
+func wrap(h Handler, middlewares ...HttpMiddleware) http.Handler {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		responder := h.ServeHTTP(newRequest(r))
 		if responder == nil {
 			panic("handler returned nil responder")
@@ -37,8 +39,14 @@ func wrap(h Handler) http.Handler {
 				log.Error(err))
 		}
 	})
+
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		handler = middlewares[i](handler).ServeHTTP
+	}
+
+	return handler
 }
 
-func wrapFn(fn HandlerFunc) http.HandlerFunc {
-	return wrap(fn).ServeHTTP
+func wrapFn(fn HandlerFunc, middlewares ...HttpMiddleware) http.HandlerFunc {
+	return wrap(fn, middlewares...).ServeHTTP
 }

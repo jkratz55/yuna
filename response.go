@@ -33,6 +33,7 @@ func Response() *ResponseBuilder {
 		header:  http.Header{},
 		cookies: make([]*http.Cookie, 0),
 		body:    nil,
+		html:    false,
 	}
 }
 
