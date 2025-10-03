@@ -56,6 +56,10 @@ func DefaultClient() *resty.Client {
 	return defaultClient
 }
 
+// NewClient returns a new [resty.Client] with the specified options.
+//
+// The client is configured with an http.Transport tuned for high volumes of HTTP requests to a small
+// number of hosts, which is common in a microservice architecture.
 func NewClient(opts ...ClientOption) *resty.Client {
 
 	baseOpts := make([]baseOption, len(opts))

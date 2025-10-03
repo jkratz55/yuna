@@ -23,6 +23,7 @@ func (f HandlerFunc) ServeHTTP(r *Request) Responder {
 	return f(r)
 }
 
+// HttpMiddleware is a function that wraps an http.Handler.
 type HttpMiddleware func(next http.Handler) http.Handler
 
 func wrap(h Handler, middlewares ...HttpMiddleware) http.Handler {

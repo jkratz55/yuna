@@ -2,6 +2,7 @@ package yuna
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"go.opentelemetry.io/otel"
@@ -9,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"github.com/jkratz55/yuna/internal"
+	"github.com/jkratz55/yuna/log"
 )
 
 // An HttpAuthenticator authenticates the user/client from the request.
@@ -55,6 +57,21 @@ func PrincipalFromCtx(ctx context.Context) (Principal, bool) {
 	return p, ok
 }
 
+// Authenticate returns an HTTP middleware that authenticates the user/client from the request with
+// the provided HttpAuthenticator.
+//
+// The Authenticate middleware handles authentication but does not enforce authorization. To enforce
+// the user/client is authenticated, the Authenticated middleware should be in the next chain after
+// the Authenticate middleware. If the user/client requires a specific role, the RequireRole
+// middleware should be in the next chain after the Authenticate middleware.
+//
+// The Authenticate middleware stores the Principal returned by the HttpAuthenticator in the context
+// of the request, which is used by the Authenticated and RequireRole middlewares. The Principle can
+// also be retrieved in a Handler using the PrincipalFromCtx function.
+//
+// It is important to note that the Authenticate middleware does not handle authentication failures
+// due to invalid or missing credentials. However, if the HttpAuthenticator returns a non-nil error
+// value, the Authenticate middleware will respond with an HTTP 500 InternalServerError.
 func Authenticate(authenticator HttpAuthenticator) func(next http.Handler) http.Handler {
 	if authenticator == nil {
 		panic("authenticator cannot be nil")
@@ -70,6 +87,10 @@ func Authenticate(authenticator HttpAuthenticator) func(next http.Handler) http.
 
 			principal, err := authenticator.Authenticate(r)
 			if err != nil {
+				logger := log.LoggerFromCtx(r.Context())
+				logger.Error(fmt.Sprintf("Error authenticating request. %T.Authenticate returned an error", authenticator),
+					log.Error(err))
+
 				span.RecordError(err)
 				span.SetStatus(codes.Error, err.Error())
 				problem := InternalServerError()
@@ -88,6 +109,13 @@ func Authenticate(authenticator HttpAuthenticator) func(next http.Handler) http.
 	}
 }
 
+// Authenticated returns an HTTP middleware that enforces the user/client is authenticated.
+//
+// The Authenticated middleware retrieves the Principal from the context of the request, and thus
+// expects the Authenticate middleware to have been invoked higher in the middleware chain. If the
+// Principal is present in the context and is not anonymous, the Authenticated middleware will
+// continue to the next handler in the chain. Otherwise, the Authenticated middleware will respond
+// with an HTTP 401 Unauthorized.
 func Authenticated() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -103,6 +131,15 @@ func Authenticated() func(next http.Handler) http.Handler {
 	}
 }
 
+// RequireRole returns an HTTP middleware that enforces the user/client has the specified role.
+//
+// The RequireRole middleware retrieves the Principal from the context of the request, and thus
+// expects the Authenticate middleware to have been invoked higher in the middleware chain. If the
+// Principal is present in the context and is not anonymous, and the Principal has the specified
+// role, the RequireRole middleware will continue to the next handler in the chain. Otherwise, the
+// RequireRole middleware will respond with an HTTP 403 Forbidden. If the Principal is not present
+// in the context or is anonymous, the RequireRole middleware will respond with an HTTP 401
+// Unauthorized.
 func RequireRole(role string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
