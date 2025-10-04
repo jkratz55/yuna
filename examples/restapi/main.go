@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -56,6 +57,16 @@ func main() {
 		yuna.WithHealthChecks(),
 		yuna.WithAuthentication(authenticator))
 
+	app.RegisterHealthCheck(yuna.ComponentRegistration{
+		Name:     "Silly",
+		Critical: true,
+		Checker: yuna.HealthCheckerFunc(func(ctx context.Context) yuna.HealthStatus {
+			return yuna.StatusUp
+		}),
+		Tags:    []string{"silly"},
+		Timeout: time.Second * 1,
+	})
+
 	app.Get("/hello", func(r *yuna.Request) yuna.Responder {
 		return yuna.Ok(map[string]string{"hello": "world"})
 	})
@@ -84,7 +95,7 @@ func main() {
 
 			// Return HTTP 201 Created with the location of the newly created resource
 			return yuna.Created(fmt.Sprintf("/api/event/%s", uuid.New().String()))
-		})
+		}, yuna.Consumes(yuna.MIMEApplicationJSON))
 
 		r.Get("/event", func(r *yuna.Request) yuna.Responder {
 

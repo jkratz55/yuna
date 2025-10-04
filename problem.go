@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/jkratz55/yuna/log"
 )
 
 var (
@@ -32,6 +34,7 @@ type ProblemDetails struct {
 	StatusCode int
 	Extensions map[string]interface{}
 
+	headers http.Header
 	error
 }
 
@@ -180,9 +183,19 @@ func (p *ProblemDetails) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.Extensions["sampled"] = spanCtx.IsSampled()
 	}
 
+	for k, v := range p.headers {
+		for _, h := range v {
+			w.Header().Add(k, h)
+		}
+	}
+
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(p.StatusCode)
-	_ = json.NewEncoder(w).Encode(p)
+	if err := json.NewEncoder(w).Encode(p); err != nil {
+		log.LoggerFromCtx(r.Context()).Error("Error writing problem/error response to client",
+			log.Error(err))
+	}
 }
 
 func BadRequest(violations Violations) *ProblemDetails {
@@ -203,8 +216,6 @@ func BadRequest(violations Violations) *ProblemDetails {
 		},
 	}
 }
-
-// todo: more helpers for standard errors
 
 func Unauthorized() *ProblemDetails {
 	return &ProblemDetails{
@@ -236,13 +247,25 @@ func NotFound() *ProblemDetails {
 	}
 }
 
-func MethodNotAllowed() *ProblemDetails {
+func MethodNotAllowed(allowedMethods ...string) *ProblemDetails {
 	return &ProblemDetails{
 		Type:       "about:blank",
 		Title:      "Method Not Allowed",
 		Detail:     "The requested method is not allowed on this resource.",
 		StatusCode: http.StatusMethodNotAllowed,
 		Extensions: make(map[string]interface{}),
+		headers: http.Header{
+			"Allow": allowedMethods,
+		},
+	}
+}
+
+func NotAcceptable() *ProblemDetails {
+	return &ProblemDetails{
+		Type:       "about:blank",
+		Title:      "Not Acceptable",
+		Detail:     "Server cannot produce a response matching the acceptable content types.",
+		StatusCode: http.StatusNotAcceptable,
 	}
 }
 
@@ -250,8 +273,58 @@ func Conflict() *ProblemDetails {
 	return &ProblemDetails{
 		Type:       "about:blank",
 		Title:      "Conflict",
-		Detail:     "The request could not be completed due to a conflict with the current state of the resource.",
+		Detail:     "The request could not be completed due to a conflict.",
 		StatusCode: http.StatusConflict,
+		Extensions: make(map[string]interface{}),
+	}
+}
+
+func Gone() *ProblemDetails {
+	return &ProblemDetails{
+		Type:       "about:blank",
+		Title:      "Gone",
+		Detail:     "The requested resource is no longer available.",
+		StatusCode: http.StatusGone,
+		Extensions: make(map[string]interface{}),
+	}
+}
+
+func UnsupportedMediaType() *ProblemDetails {
+	return &ProblemDetails{
+		Type:       "about:blank",
+		Title:      "Unsupported Media Type",
+		Detail:     "The request entity has a media type which the server or resource does not support.",
+		StatusCode: http.StatusUnsupportedMediaType,
+		Extensions: make(map[string]interface{}),
+	}
+}
+
+func UnprocessableEntity(violations Violations) *ProblemDetails {
+	detail := ""
+	if violations == nil || len(violations) == 0 {
+		detail = "The request entity could not be processed."
+	} else {
+		detail = "The request entity could not be processed due to validation errors. See 'violations' for details."
+	}
+	prob := &ProblemDetails{
+		Type:       "about:blank",
+		Title:      "Unprocessable Entity",
+		Detail:     detail,
+		StatusCode: http.StatusUnprocessableEntity,
+		Extensions: make(map[string]interface{}),
+	}
+	if len(violations) > 0 {
+		prob.Extensions["violations"] = violations
+	}
+	return prob
+}
+
+func TooManyRequests() *ProblemDetails {
+	return &ProblemDetails{
+		Type:       "about:blank",
+		Title:      "Too Many Requests",
+		Detail:     "The request was rate-limited. Try again later.",
+		StatusCode: http.StatusTooManyRequests,
 		Extensions: make(map[string]interface{}),
 	}
 }
@@ -269,6 +342,35 @@ func InternalServerError(errs ...error) *ProblemDetails {
 		pd.error = err
 	}
 	return pd
+}
+
+func BadGateway() *ProblemDetails {
+	return &ProblemDetails{
+		Type:       "about:blank",
+		Title:      "Bad Gateway",
+		Detail:     "The server received an invalid response from an upstream server.",
+		StatusCode: http.StatusBadGateway,
+		Extensions: make(map[string]interface{}),
+	}
+}
+
+func ServiceUnavailable() *ProblemDetails {
+	return &ProblemDetails{
+		Type:       "about:blank",
+		Title:      "Service Unavailable",
+		Detail:     "The server is currently unable to handle the request due to a temporary overloading or maintenance of the server. Please try again later.",
+		StatusCode: http.StatusServiceUnavailable,
+		Extensions: make(map[string]interface{}),
+	}
+}
+
+func GatewayTimeout() *ProblemDetails {
+	return &ProblemDetails{
+		Type:       "about:blank",
+		Title:      "Gateway Timeout",
+		Detail:     "The server timed out while proxying the request to the upstream server. Please try again later.",
+		StatusCode: http.StatusGatewayTimeout,
+	}
 }
 
 // Violations represent validation errors / constraint violations detected during request validation.

@@ -92,6 +92,9 @@ func (h *healthcheckHandler) register(c ComponentRegistration) {
 }
 
 func (h *healthcheckHandler) live(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"UP"}`))
@@ -100,6 +103,10 @@ func (h *healthcheckHandler) live(w http.ResponseWriter, r *http.Request) {
 func (h *healthcheckHandler) ready(w http.ResponseWriter, r *http.Request) {
 	resp := readyStatus(r.Context(), h.components)
 
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+	w.Header().Set("X-Health-Status", resp.Status.String())
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(resp.Status.StatusCode())
 	_ = json.NewEncoder(w).Encode(resp)

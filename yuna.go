@@ -108,6 +108,9 @@ func (z *Yuna) initOpsServer(conf *config) *http.Server {
 			Start:  z.startTs,
 		}
 
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
 		w.Header().Set(HeaderContentType, MIMEApplicationJSON)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(res)
