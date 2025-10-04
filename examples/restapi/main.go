@@ -145,6 +145,13 @@ func main() {
 
 		oh := &OrderHandler{}
 		r.Get("/order", oh.getOrder, sillyMiddleware(), sillyMiddleware2())
+
+		r.Get("/responderfunc", func(r *yuna.Request) yuna.Responder {
+			return yuna.ResponderFunc(func(w http.ResponseWriter, r *http.Request) error {
+				w.WriteHeader(http.StatusOK)
+				return nil
+			})
+		})
 	})
 
 	app.Start()
