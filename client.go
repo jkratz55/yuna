@@ -83,7 +83,7 @@ func NewClient(opts ...ClientOption) *resty.Client {
 			}
 			ctx := context.WithValue(r.Context(), internal.ContextKeyRestyTemplatedPath, path)
 			r.SetContext(ctx)
-			return nil
+			return conf.onBeforeRequest(c, r)
 		}).
 		OnAfterResponse(func(c *resty.Client, r *resty.Response) error {
 
@@ -125,7 +125,7 @@ func NewClient(opts ...ClientOption) *resty.Client {
 				instrumenter.RecordConnReuse(r.Request.Context(), host, traceInfo.IsConnReused)
 			}
 
-			return nil
+			return conf.onAfterResponse(c, r)
 		}).
 		OnError(func(r *resty.Request, err error) {
 			var respErr *resty.ResponseError
@@ -136,6 +136,8 @@ func NewClient(opts ...ClientOption) *resty.Client {
 			// Otherwise, we are dealing with transport level errors such as dns resolution, connection
 			// timeouts, etc.
 			instrumenter.RecordClientError(r.Context(), r.RawRequest.Host)
+
+			conf.onClientError(r, err)
 		})
 }
 

@@ -48,6 +48,8 @@ func main() {
 	// The meat of the example
 	// --------------------------------------------------------------------------------------------
 
+	// Setup silly HttpAuthenticator implementation that always assumes the user is an admin is any
+	// API token is present in the request header.
 	authenticator := &TokenAuthenticator{}
 
 	// Create a new application with metrics exposed via Prometheus, PPROF, and health checks
