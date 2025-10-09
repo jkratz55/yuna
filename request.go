@@ -161,7 +161,7 @@ func (r *Request) MultipartReader() (*multipart.Reader, error) {
 }
 
 func (r *Request) Decode(v interface{}) error {
-	ct := r.raw.Header.Get("Content-Type")
+	ct := r.raw.Header.Get(HeaderContentType)
 	mediaType, _, _ := mime.ParseMediaType(ct)
 	mediaType = strings.ToLower(mediaType)
 
