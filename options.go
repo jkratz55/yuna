@@ -47,9 +47,10 @@ type config struct {
 	authenticator HttpAuthenticator
 
 	// Resty specific settings
-	onBeforeRequest func(c *resty.Client, r *resty.Request) error
-	onAfterResponse func(c *resty.Client, r *resty.Response) error
-	onClientError   func(r *resty.Request, err error)
+	onBeforeRequest    func(c *resty.Client, r *resty.Request) error
+	onAfterResponse    func(c *resty.Client, r *resty.Response) error
+	onClientError      func(r *resty.Request, err error)
+	clientInstrumenter HttpClientInstrumenter
 }
 
 func newConfig(opts ...baseOption) *config {
@@ -75,6 +76,7 @@ func newConfig(opts ...baseOption) *config {
 		onBeforeRequest:         func(c *resty.Client, r *resty.Request) error { return nil },
 		onAfterResponse:         func(c *resty.Client, r *resty.Response) error { return nil },
 		onClientError:           func(r *resty.Request, err error) {},
+		clientInstrumenter:      nil,
 	}
 
 	for _, opt := range opts {
@@ -320,5 +322,12 @@ func WithClientOnClientError(fn func(r *resty.Request, err error)) ClientOption 
 	}
 	return clientOption(func(c *config) {
 		c.onClientError = fn
+	})
+}
+
+// WithClientHttpInstrumenter sets the instrumenter used by the Resty client.
+func WithClientHttpInstrumenter(is HttpClientInstrumenter) ClientOption {
+	return clientOption(func(c *config) {
+		c.clientInstrumenter = is
 	})
 }

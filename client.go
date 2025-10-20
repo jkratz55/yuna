@@ -72,7 +72,12 @@ func NewClient(opts ...ClientOption) *resty.Client {
 		otelhttp.WithTracerProvider(conf.traceProvider),
 		otelhttp.WithMeterProvider(noop.NewMeterProvider())) // We don't want to use the instrumentation from otelhttp
 
-	instrumenter := metrics.NewHttpClientInstrumenter(conf.meterProvider, conf.requestDurationBuckets...)
+	var instrumenter HttpClientInstrumenter
+	if conf.clientInstrumenter == nil {
+		instrumenter = metrics.NewHttpClientInstrumenter(conf.meterProvider, conf.requestDurationBuckets...)
+	} else {
+		instrumenter = conf.clientInstrumenter
+	}
 
 	return resty.New().
 		SetTransport(transport).
@@ -141,7 +146,9 @@ func NewClient(opts ...ClientOption) *resty.Client {
 		})
 }
 
-type httpClientInstrumenter interface {
+// todo: allow bringing you own instrumenter, custom labels
+
+type HttpClientInstrumenter interface {
 	RecordRequest(ctx context.Context, method, path, addr string, status int, latency time.Duration)
 	RecordClientError(ctx context.Context, addr string)
 	RecordDNSLookup(ctx context.Context, latency time.Duration)
